@@ -123,4 +123,3 @@ for _ in range(1000):
 assert 59 < extreme_value_count < 65, f"{extreme_value_count}"
 
 print(two_sided_p_value(531.5, mu_0, sigma_0))                    # 0.046345287837786575
-
