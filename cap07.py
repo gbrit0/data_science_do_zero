@@ -122,4 +122,70 @@ for _ in range(1000):
 # o p-value era 0.062 => ~62 valores extremos em 1000
 assert 59 < extreme_value_count < 65, f"{extreme_value_count}"
 
-print(two_sided_p_value(531.5, mu_0, sigma_0))                    # 0.046345287837786575
+print(two_sided_p_value(531.5, mu_0, sigma_0))                    # 0.046345287837786575 -> Como esse valor é menor que a significância de 5%
+                                                                  # recusamos a hipótese nula.
+
+#INTERVALOS DE CONFIANÇA
+
+p_hat = 525 / 1000
+mu = p_hat
+sigma = math.sqrt(p_hat * (1 - p_hat) / 1000)                     # 0.0158
+
+print(normal_two_sided_bounds(0.95, mu, sigma))                   # [0.4940, 0.05560] -> Logo, não determinamos que a moeda é viciada, já que
+                                                                  # 0.5 está dentro do intervalo de confiança
+# Se tivéssemos observado 540 caras, a situação seria
+
+p_hat = 540 / 1000
+mu = p_hat
+sigma = math.sqrt(p_hat * (1 - p_hat) / 1000)                     # 0.0158
+print(sigma)
+print(normal_two_sided_bounds(0.95, mu, sigma))                   # [0.5091, 0.5709] aqui a moeda honesta não está no intervalo de confiança
+
+# P-HACKING
+from typing import List
+
+def run_experiment() -> List[bool]:
+   """Lança uma moeda honesta mil vezes. True = heads, False = tails"""
+   return [random.random()< 0.5 for _ in range(1000)]
+
+def reject_fairness(experiment: List[bool]) -> bool:
+   """Usando os níveis de significância de 5%"""
+   num_heads = len([flip for flip in experiment if flip])
+   return num_heads < 469 or num_heads > 531
+
+random.seed(0)
+experiments = [run_experiment() for _ in range(1000)]
+num_rejections = len([experiment
+                      for experiment in experiments
+                      if reject_fairness(experiment)])
+
+assert num_rejections==46
+
+
+# ---------------------- EXEMPLO: EXECUTANDO UM TESTE A/B ----------------------
+
+def estimated_parameters(N: int, n: int) -> Tuple[float, float]:
+   p = n / N
+   sigma = math.sqrt(p * (1 - p) / N)
+   return p, sigma
+
+def a_b_test_statistic(N_A: int, n_A: int, N_B: int, n_B: int) -> float:
+   p_A, sigma_A = estimated_parameters(N_A, n_A)
+   p_B, sigma_B = estimated_parameters(N_B, n_B)
+   return (p_B - p_A) / math.sqrt(sigma_A ** 2 + sigma_B ** 2)
+
+z = a_b_test_statistic(1000, 200, 1000, 180)                      # -1.14
+# A probabilidade de observar essa grande diferença se a média for igual será?
+two_sided_p_value(z)                                              #0.254 -> Esse valor é tão grande que não podemos definir se há alguma diferença
+# Por outro lado, se "quase sem viés" receber somente 150 cliques, temos que:
+z = a_b_test_statistic(1000, 200, 1000, 150)                      # -2.94
+two_sided_p_value(z)                                              # 0.003
+
+def B(alpha: float, beta: float) -> float:
+   """Uma constante normalizadora para a qual a probabilidade total é 1"""
+   return math.gamma(alpha) * math.gamma(beta) / math.gamma(alpha + beta)
+
+def beta_pdf(x: float, alpha: float, beta: float) -> float:
+   if x <= 0 or x >= 1:                         # nenhum peso fora de [0, 1]
+      return 0
+   return x ** (alpha - 1) * (1 - x) ** (beta - 1) / B(alpha, beta)
