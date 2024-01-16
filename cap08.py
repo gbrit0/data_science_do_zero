@@ -74,7 +74,7 @@ assert distance(v, [0, 0, 0]) < 0.001                       # v deve ser próxim
 
 # USANDO O GRADIENTE DESCENDENTE PARA AJUSTAR MODELOS
 # x vai de -50 a 49, y é sempre 20 * x + 5
-inputs = [(x, 20 * + 5) for x in range(-50, 50)]
+inputs = [(x, 20 * x + 5) for x in range(-50, 50)]
 
 def linear_gradient(x: float, y: float, theta: Vector) -> Vector:
    slope, intercept = theta
@@ -83,3 +83,64 @@ def linear_gradient(x: float, y: float, theta: Vector) -> Vector:
    squared_error = error ** 2                               # Vamos minimizar o erro quadrático
    grad = [2 * error * x, 2 * error]                        # usando seu gradiente
    return grad
+
+from cap04 import vector_mean
+
+#Comece com valores aleatórios para a inclinação e o intercepto
+theta = [random.uniform(-1, 1), random.uniform(-1, 1)]
+
+learning_rate = 0.001
+
+for epoch in range(5000):
+   # Compute a média dos gradientes
+   grad = vector_mean([linear_gradient(x, y, theta) for x, y in inputs])
+   # Dê um passo nessa direção
+   theta = gradient_step(theta, grad, -learning_rate)
+   print(epoch, theta)
+
+slope, intercept = theta
+assert 19.9 < slope < 20.1, "slope should be about 20"
+assert 4.9 < intercept < 5.1, "intercept should be about 5"
+
+# Minibatch e Gradiente Descendente Estocástico
+from typing import TypeVar, List, Iterator
+
+T = TypeVar('T')                                            # isso permite a inserção de funções 'genéricas'
+
+def minibatches(dataset: List[T],
+                batch_size: int,
+                shuffle: bool = True) -> Iterator[List[T]]:
+   """Gera minibatches de tamanho 'batch_size' a partir do conjunto de dados"""
+   # inicie os índices 0, batch_size, 2 * batch_size...
+   batch_starts = [start for start in range(0, len(dataset), batch_size)]
+
+   if shuffle: random.shuffle(batch_starts) # classifique os batches aleatóriamente
+   for start in batch_starts:
+      end = start + batch_size
+      yield dataset[start:end]
+
+# Resolvendo o problema novamente, mas usando minibatches:
+theta = [random.uniform(-1, 1), random.uniform(-1, 1)]
+
+for epoch in range(1000):
+   for batch in minibatches(inputs, batch_size=20):
+      grad = vector_mean([linear_gradient(x, y, theta) for x, y in batch])
+      theta = gradient_step(theta, grad, -learning_rate)
+   print(epoch, theta)
+
+slope, intercept = theta
+assert 19.9 < slope < 20.1, "slope should be about 20"
+assert 4.9 < intercept < 5.1, "intercept should be about 5"
+
+# outra variação é o gradiente descendente estocástico
+theta = [random.uniform(-1, 1), random.uniform(-1, 1)]
+
+for epoch in range(100):
+   for x, y in inputs:
+      grad = linear_gradient(x, y, theta)
+      theta = gradient_step(theta, grad, -learning_rate)
+   print(epoch, theta)
+
+slope, intercept = theta
+assert 19.9 < slope < 20.1, "slope should be about 20"
+assert 4.9 < intercept < 5.1, "intercept should be about 5"
