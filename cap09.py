@@ -340,3 +340,11 @@ access_tokens = {
 with open('access_tokens.json', 'w') as file:
    json.dump(access_tokens, file)
 
+# com ums instância do Twython autenticada, podemos começar a fazer pesquisas:
+
+# pesquise tweets que contenham a expressão 'data science'
+for status in twitter.search(q='"data science"')["statuses"]:
+   user = status["user"]["screen_name"]
+   text = status["text"]
+   with open('test.txt', 'w') as file:
+      file.writelines({user: text})
