@@ -56,7 +56,7 @@ import matplotlib.pyplot as plt
 plt.plot(x,y,linestyle='solid')
 plt.title("CDF uniforme")
 plt.axis([-1,2,-0.5,1.5])
-plt.show()
+# plt.show()
 
 # DISTRIBUIÇÃO NORMAL
 import math
@@ -73,7 +73,7 @@ plt.plot(xs,[normal_pdf(x,sigma=0.5) for x in xs], ':', label='mu=0,sigma=0.5')
 plt.plot(xs,[normal_pdf(x,mu=-1) for x in xs], '-.', label='mu=-1,sigma=1')
 plt.legend()
 plt.title("Various Normal pdfs")
-plt.show()
+# plt.show()
 
 def normal_cdf(x: float, mu: float = 0, sigma: float = 1) -> float:
    return (1 + math.erf((x - mu) / math.sqrt(2) / sigma)) / 2
@@ -85,7 +85,7 @@ plt.plot(xs,[normal_cdf(x,sigma=0.5) for x in xs], ':', label='mu=0,sigma=0.5')
 plt.plot(xs,[normal_cdf(x,mu=-1) for x in xs], '-.', label='mu=-1,sigma=1')
 plt.legend(loc=4)          # no canto inferior direito
 plt.title("Varias CDF's Normais")
-plt.show()
+# plt.show()
 
 # Ocasionalmente é preciso inverter a normal_cdf para obter o valor correspondente à probabilidade especificada
 # Não existe uma forma simples de calcular mas como a normal_cdf é contínua e cresce estritamente, podemos usar uma busca binária
