@@ -24,14 +24,24 @@ file_for_writing.close()
 file_for_appending.close()
 
 # como é fácil esquecer de fechar os arquivos, sempre utilizar um bloco with, pois serão fechados automaticamente ao final
+filename = 'nome_do_arquivo.extensao'
+def function_that_gets_data_from():
+   # suponha uma função de extração de dados
+   return True
+
 with open(filename) as f:
    data = function_that_gets_data_from(f)
 
 # nesse ponto, f já foi fechado, então nem tente usá-lo
+   
+def process() -> None:
+    # Imaginge that this function actually does something.
+   assert 1 + 1 == 2
+
 process(data)
 
 # Para ler um arquivo inteiro basta iterar nas linhas usando um for
-import regex as re
+import re
 
 starts_with_hash = 0
 
@@ -142,3 +152,191 @@ importants_paragraphs = soup('p', {'class' : 'importatn'})
 importants_paragraphs2 = soup('p', 'important')
 importants_paragraphs3 = [p for p in soup('p')
                           if 'important' in p.get('class', [])]
+
+# combinação dos métodos para um resultado mais elaborado:
+# encontrar todos os elementos <span> contidos em um elemento <div>:
+
+# Aviso: retornará o mesmo <span> várias vezes
+# se ele estiver em vários <div>
+# Ficar atento a isso:
+spans_inside_divs = [span
+                     for div in soup('div')                 # para cada <div> na página
+                     for span in div('span')]               # encontre cada <span> dentro dele
+
+# Exemplo: Monitorando o Congresso
+
+url = "https://www.house.gov/representatives"
+text = requests.get(url).text
+soup = BeautifulSoup(text, "html5lib")
+
+all_urls = [a['href']
+            for a in soup('a')
+            if a.has_attr('href')]
+
+print(len(all_urls))                                        # 967, o que é demais
+
+# Deve começar com http:// ou https://
+# Deve terminar com .house.gov ou .house.gov/
+regex = r"^https?://.*\.house\.gov/?$"
+
+# Escrevendo alguns testes:
+assert re.match(regex, "http://joel.house.gov")
+assert re.match(regex, "https://joel.house.gov")
+assert re.match(regex, "http://joel.house.gov/")
+assert re.match(regex, "https://joel.house.gov/")
+assert not re.match(regex, "joel.house.gov")
+assert not re.match(regex, "http://joel.house.com")
+assert not re.match(regex, "https://joel.house.gov/biography")
+
+good_urls = [url for url in all_urls if re.match(regex, url)]
+
+print(len(good_urls))                                       # 876
+
+good_urls = list(set(good_urls))                            # set -> coleção de elementos únicos. Eliminar as duplicatas
+
+print(len(good_urls))                                       # 438
+
+html = requests.get('https://jayapal.house.gov').text
+soup = BeautifulSoup(html, 'html5lib')
+
+# Use um conjunto porque os links talvez surjam várias vezes
+links = {a['href'] for a in soup('a') if 'press releases' in a.text.lower()}
+
+print(links)
+
+from typing import Dict, Set
+
+press_releases: Dict[str, Set[str]] = {}
+
+for house_url in good_urls:
+   html = requests.get(house_url).text
+   soup = BeautifulSoup(html, 'html5lib')
+   pr_links = {a['href'] for a in soup('a') if 'press releases' in a.text.lower()}
+   print(f"{house_url}: {pr_links}")
+   press_releases[house_url] = pr_links
+
+# identificar comunicados de imprensa com a palavra "dados"
+def paragraph_mentions(text: str, keyword: str) -> bool:
+   """Retorna True se um <p> no texto menciona [keyword]"""
+   soup = BeautifulSoup(text, 'html5lib')
+   paragraphs = [p.get_text() for p in soup('p')]
+
+   return any(keyword.lower() in paragraph.lower()
+              for paragraph in paragraphs)
+
+# um teste:
+text = """<body><h1>Facebook</h1><p>Twitter</p>"""
+assert paragraph_mentions(text, "twitter")
+assert not paragraph_mentions(text, "facebook")
+
+for house_url, pr_links in press_releases.items():
+   for pr_link in pr_links:
+      url = f"{house_url}/{pr_link}"
+      text = requests.get(url).text
+
+      if paragraph_mentions(text, 'data'):
+         print(f"{house_url}")
+         break    # fim da atividade em house_url
+
+# Usando API's
+# JSON e XML
+      
+# { "title" : "Data Science Book",
+#   "author" : "Joel Grus",
+#   "publicationYear" : 2019,
+#   "topics" : [ "data", "science", "data science"] }
+      
+import json
+serialized = """{ "title" : "Data Science Book",
+  "author" : "Joel Grus",
+  "publicationYear" : 2019,
+  "topics" : [ "data", "science", "data science"] }"""
+
+# analise o JSON para criar um dict do Python
+deserialized = json.loads(serialized)
+assert deserialized["publicationYear"] == 2019
+assert "data science" in deserialized["topics"]
+
+# <Book>
+#    <Title>Data Science Book</Title>
+#    <Author>Joel Grus</Author>
+#    <PublicationYear>2014</PublicationYear>
+#    <Topics>
+#       <Topic>data</Topic>
+#       <Topic>science</Topic>
+#       <Topic>data science</Topic>
+#    </Topics>
+# </Book>
+import requests, json
+github_user = "gbrit0"
+endpoint = f"https://api.github.com/users/{github_user}/repos"
+
+repos = json.loads(requests.get(endpoint).text)    # list de dicts
+
+# com isso é possível definir os meses e dias da semana com mais probabilidade de se criar um repositório, por exemplo
+# porém as datas na resposta são strings -> é preciso tratar
+from collections import Counter
+from dateutil.parser import parse
+
+dates = [parse(repo["created_at"]) for repo in repos]
+month_counts = Counter(date.month for date in dates)
+weekday_counts = Counter(date.weekday() for date in dates)
+
+last_5_repositories = sorted(repos,
+                             key=lambda r: r["pushed_at"],
+                             reverse=True)[:5]
+
+last_5_languages = [repo["language"]
+                    for repo in last_5_repositories]
+
+# ----------------------------------------------------------------------------------------------------------
+# ---------------------------------------------- USANDO O TWYTHON ------------------------------------------
+# ----------------------------------------------------------------------------------------------------------
+import json
+
+with open('credentials.json') as file:
+   credentials = json.load(file)
+
+CONSUMER_KEY = credentials.get('api_key')
+CONSUMER_SECRET = credentials.get('api_key_secret')
+
+# agora podemos criar uma instância do cliente:
+import webbrowser
+from twython import Twython
+
+# configure um cliente temporário para recuperar uma URL de autenticação
+temp_client = Twython(CONSUMER_KEY, CONSUMER_SECRET)
+temp_creds = temp_client.get_authentication_tokens()
+url = temp_creds['auth_url']
+
+# agora, acesse a URL para autorizar o aplicativo e obter um PIN
+print(f"go visit {url} and get the PIN code and paste it bellow")
+webbrowser.open(url)
+PIN_CODE = input("please enter the PIN code: ")
+
+# agora, usamos o PIN_CODE para obter os tokens reais
+auth_client = Twython(CONSUMER_KEY,
+                      CONSUMER_SECRET,
+                      temp_creds['oauth_token'],
+                      temp_creds['oauth_token_secret'])
+
+final_step = auth_client.get_authorized_tokens(PIN_CODE)
+ACCESS_TOKEN = final_step['oauth_token']
+ACCESS_TOKEN_SECRET = final_step['oauth_token_secret']
+
+# e obter uma nova instância do Twython com eles
+twitter = Twython(CONSUMER_KEY,
+                  CONSUMER_SECRET,
+                  ACCESS_TOKEN,
+                  ACCESS_TOKEN_SECRET)
+
+# salvando os tokens obtidos para não precisar criar uma instância de cliente novamente:
+
+access_tokens = {
+   "ACCESS_TOKEN": ACCESS_TOKEN,
+   "ACCESS_TOKEN_SECRET": ACCESS_TOKEN_SECRET
+   }
+
+with open('access_tokens.json', 'w') as file:
+   json.dump(access_tokens, file)
+
