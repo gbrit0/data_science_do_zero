@@ -25,6 +25,10 @@ def plot_histogram(points: List[float], bucket_size: float, title: str = ""):
 import random
 from cap06 import inverse_normal_cdf
 
+def random_normal() -> float:
+    """Returns a random draw from a standard normal distribution"""
+    return inverse_normal_cdf(random.random())
+
 random.seed(0)
 
 # uniforme entre -100 e 100
@@ -68,3 +72,186 @@ from cap05 import correlation
 
 print(correlation(xs, ys1))      # 0.9010493686379609
 print(correlation(xs, ys2))      # -0.8920981526880033
+
+# Muitas Dimensões
+# ao lidar com muitas dimensões devemos determinar as relações entre elas
+# uma abordagem é analisar a matriz de correlação
+from cap04 import Matrix, Vector, make_matrix
+
+def correlation_matrix(data: List[Vector]) -> Matrix:
+   """
+   Retorna a matriz len(data) x len(data), na qual a entrada (i, j) é a correlação entre data[i] e data[j]
+   """
+   def correlation_ij(i: int, j: int) -> float:
+      return correlation(data[i], data[j])
+   
+   return make_matrix(len(data), len(data), correlation_ij)
+
+# Just some random data to show off correlation scatterplots
+num_points = 100
+
+def random_row() -> List[float]:
+   row = [0.0, 0, 0, 0]
+   row[0] = random_normal()
+   row[1] = -5 * row[0] + random_normal()
+   row[2] = row[0] + row[1] + 5 * random_normal()
+   row[3] = 6 if row[2] > -2 else 0
+   return row
+
+random.seed(0)
+   # each row has 4 points, but really we want the columns
+corr_rows = [random_row() for _ in range(num_points)]
+
+corr_data = [list(col) for col in zip(*corr_rows)]
+
+# corr_data é uma lista com quatro vetores 100-d
+num_vectors = len(corr_data)
+fig, ax = plt.subplots(num_vectors, num_vectors)
+
+for i in range(num_vectors):
+   for j in range(num_vectors):
+
+      # Disperse a column_j no eixo x e a column_i no eixo y
+      if i != j: ax[i][j].scatter(corr_data[j], corr_data[i])
+
+      # a menos que i == j, nesse caso, mostre o nome da séria
+      else: ax[i][j].annotate("series " + str(i), (0.5, 0.5),
+                              xycoords = 'axes fraction',
+                              ha='center', va='center')
+         
+      # Em seguida, oculte os rótulos dos eixos, exceto pelos gráficos à esquerda e na parte inferior
+      if i < num_vectors - 1: ax[i][j].xaxis.set_visible(False)
+      if j > 0: ax[i][j].yaxis.set_visible(False)
+
+# Corrija os rótulos dos eixos no canto superior esquerdo e no canto inferiro direito,
+# pois só haverá texto nesses gráficos
+ax[-1][-1].set_xlim(ax[0][-1].get_xlim())
+ax[0][0].set_ylim(ax[0][1].get_ylim())
+plt.show()
+
+# Usando NamedTuples
+import datetime
+
+stock_price = {'closing_price': 102.06,
+               'date': datetime.date(204, 8, 29),
+               'symbol': 'AAPL'}
+
+from collections import namedtuple
+
+StockPrice = namedtuple('StockPrice', ['symbol', 'date', 'closing_price'])
+price =  StockPrice('MSFT', datetime.date(2018, 12, 14), 106.03)
+
+assert price.symbol == 'MSFT'
+assert price.closing_price == 106.03
+
+from typing import NamedTuple
+
+class StockPrice(NamedTuple):
+   symbol: str
+   date: datetime.date
+   closing_price: float
+
+   def is_high_tech(self) -> bool:
+      """Como é uma classe, também podemos adicionar métodos"""
+      return self.symbol in ['MSFT', 'GOOG', 'FB', 'AMZN', 'AAPL']
+   
+price = StockPrice('MSFT', datetime.date(2016, 12, 14), 106.03)
+
+assert price.symbol == 'MSFT'
+assert price.closing_price == 106.03
+assert price.is_high_tech()
+
+# dataclasses
+from dataclasses import dataclass
+
+@dataclass
+class StockPrice2:
+   symbol: str
+   date: datetime.date
+   closing_price: float
+
+   def is_high_tech(self) -> bool:
+      """Como é uma classe, também podemos adicionar métodos"""
+      return self.symbol in ['MSFT', 'GOOG', 'FB', 'AMZN', 'AAPL']
+   
+price2 = StockPrice2('MSFT', datetime.date(2018, 12, 14), 106.03)
+
+assert price2.symbol == 'MSFT'
+assert price2.closing_price == 106.03
+assert price2.is_high_tech()
+
+# divida as ações
+price2.closing_price /= 2
+print(f"{price2.closing_price}")
+assert price2.closing_price == 53.015, f"{price2.closing_price}"
+
+# como essa é uma classe regular, adicione novos campos da forma que quiser, o que a deixa sucetível a erros
+price2.cosing_price = 75
+print(price2)        # StockPrice2(symbol='MSFT', date=datetime.date(2018, 12, 14), closing_price=53.015)
+
+# Limpando e Estruturando
+# antes usávamos assim:
+# closing_price = float(row[2])
+# entretanto é possível reduzir a propensão a erros se a análise for feita em uma função testável
+
+from dateutil.parser import parse
+
+def parse_row(row: List[str]) -> StockPrice:
+   symbol, date, closing_price = row
+   return StockPrice(symbol=symbol,
+                     date=parse(date).date(),
+                     closing_price=float(closing_price))
+
+# Agora teste a função
+stock = parse_row(["MSFT", "2018-12-14", "106.03"])
+
+assert stock.symbol == "MSFT"
+assert stock.date == datetime.date(2018, 12, 14)
+assert stock.closing_price == 106.03
+
+# e se houver dados inválidos?
+
+from typing import Optional
+import re
+
+def try_parse_row(row: List[str]) -> Optional[StockPrice]:
+   symbol, date_, closing_price_ = row
+   # Os símbolos das ações devem estar em letras maiúsculas
+   if not re.match(r"[A-Z]+$", symbol):
+      return None
+   
+   try:
+      date = parse(date_).date()
+   except ValueError:
+      return None
+   
+   try:
+      closing_price = float(closing_price_)
+   except ValueError:
+      return None
+   
+   return StockPrice(symbol, date, closing_price)
+
+# Deve retornar None em caso de erros
+assert try_parse_row(["MSFT0", "2018-12-14", "106.03"]) is None
+assert try_parse_row(["MSFT", "2018-12--14", "106.03"]) is None
+assert try_parse_row(["MSFT", "2018-12-14", "x"]) is None
+
+# mas deve retornar o mesmo que antes se os dados forem válidos
+assert try_parse_row(["MSFT", "2018-12-14", "106.03"]) == stock
+
+# podemos ler e retornar apenas as linhas válidas
+import csv
+
+data: List[StockPrice] = []
+
+with open("comma_delimited_stock_prices.csv") as f:
+   reader = csv.reader(f)
+   for row in reader:
+      maybe_stock = try_parse_row(row)
+      if maybe_stock is None:
+         print(f"skipping invalid row: {row}")
+      else:
+         data.append(maybe_stock)
+
+# um bom próximo passo é procurar outliers usando as técnicas indicadas na seção "Explorando os Dados"
