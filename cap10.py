@@ -255,3 +255,108 @@ with open("comma_delimited_stock_prices.csv") as f:
          data.append(maybe_stock)
 
 # um bom próximo passo é procurar outliers usando as técnicas indicadas na seção "Explorando os Dados"
+         
+with open("comma_delimited_stock_prices.csv") as f:      # abra o arquivo
+   reader = csv.reader(f)
+   for row in reader:                                    # para cada linha
+      data.append(parse(row[1]).year)                    # capture o valor do ano
+
+plot_histogram(data, 10, "Histograma de anos")           # imprima um histograma dos anos em buckets de 10 anos
+
+# Manipulando Dados
+with open('stocks.csv') as f:
+   reader = csv.DictReader(f)
+   rows = [[row['Symbol'], row['Date'], row['Close']]
+           for row in reader]
+   
+# skip header
+maybe_data = [try_parse_row(row) for row in rows]
+
+# Make sure they all loaded successfully:
+assert maybe_data
+assert all(sp is not None for sp in maybe_data)
+
+# This is just to make mypy happy
+data = [sp for sp in maybe_data if sp is not None]
+
+max_aapl_price = max(stock_price.closing_price
+                     for stock_price in data
+                     if stock_price.symbol == "AAPL")
+
+from collections import defaultdict
+
+max_prices: Dict[str, float] = defaultdict(lambda: float('-inf'))
+
+for sp in data:
+   symbol, closing_price = sp.symbol, sp.closing_price
+   if closing_price > max_prices[symbol]:
+      max_prices[symbol] = closing_price
+
+# agrupando os preços por símbolo
+from typing import List
+from collections import defaultdict
+
+# colete os preços por símbolo:
+import datetime
+
+prices: Dict[str, List[StockPrice]] = defaultdict(list)
+
+for sp in data:
+   prices[sp.symbol].append(sp)
+
+# Classifique os preços por data
+prices = {symbol: sorted(symbol_prices)
+          for symbol, symbol_prices in prices.items()}
+
+def pct_change(yesterday: StockPrice, today: StockPrice) -> float:
+    return today.closing_price / yesterday.closing_price - 1
+
+class DailyChange(NamedTuple):
+    symbol: str
+    date: datetime.date
+    pct_change: float
+
+def day_over_day_changes(prices: List[StockPrice]) -> List[DailyChange]:
+    """
+    Assumes prices are for one stock and are in order
+    """
+    return [DailyChange(symbol=today.symbol,
+                        date=today.date,
+                        pct_change=pct_change(yesterday, today))
+            for yesterday, today in zip(prices, prices[1:])]
+
+all_changes = [change
+               for symbol_prices in prices.values()
+               for change in day_over_day_changes(symbol_prices)]
+
+max_change = max(all_changes, key=lambda change: change.pct_change)
+assert max_change.symbol == 'AAPL'
+assert max_change.date == datetime.date(1997, 8, 6)
+assert 0.33 < max_change.pct_change < 0.34
+
+min_change = min(all_changes, key=lambda change: change.pct_change)
+assert min_change.symbol == 'AAPL'
+assert min_change.date == datetime.date(2000, 9, 29)
+assert -0.52 < min_change.pct_change < -0.51
+
+changes_by_month: List[DailyChange] = {month: [] for month in range(1, 13)}
+
+for change in all_changes:
+   changes_by_month[change.date.month].append(change)
+
+avg_daily_change = {
+   month: sum(change.pct_change for change in changes) / len(changes)
+   for month, changes in changes_by_month.items()
+}
+# Outubro é o melhor mês
+assert avg_daily_change[10] == max(avg_daily_change.values())
+
+# Redimensionamento
+from cap04 import distance
+
+# alturas em polegadas
+a_to_b = distance([63, 150], [67, 160])      # 10.77
+a_to_c = distance([63, 150], [70, 171])      # 22.13
+b_to_c = distance([67, 160], [70, 171])      # 11.40
+
+# alturas em centímetros
