@@ -125,7 +125,7 @@ def identity_matrix(n: int) -> Matrix:
    """Retorna a matrix de identidade n x n"""
    return make_matrix(n, n, lambda i, j: 1 if i == j else 0)
 
-print(f"{identity_matrix(5)}\n")
+# print(f"{identity_matrix(5)}\n")
 
 # Matrizes para representar relações binárias
 
@@ -143,5 +143,5 @@ result_matrix = make_matrix(
                                                       # então 1 se não 0
    )
 
-for row in result_matrix:
-   print(row)
+# for row in result_matrix:
+#    print(row)
