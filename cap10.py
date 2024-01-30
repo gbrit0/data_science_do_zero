@@ -595,3 +595,165 @@ def first_principal_component(dat: List[Vector],
          t.set_description(f"dv: {dv:.3f}")
 
    return direction(guess)
+
+from cap04 import scalar_multiply
+
+def project(v: Vector, w: Vector) -> Vector:
+   """Retorne a projeção de v na direção w"""
+   projection_lenght = dot(v,w)
+   return scalar_multiply(projection_lenght, w)
+
+from cap04 import subtract
+
+def remove_projection_from_vector(v: Vector, w: Vector) -> Vector:
+   """projeta v em w e subtrai o resultado de v"""
+   return subtract(v, project(v, w))
+
+def remove_projection(data: List[Vector], w: Vector) -> List[Vector]:
+   return [remove_projection_from_vector(v,w) for v in data]
+
+def pca(data: List[Vector], num_components: int) -> List[Vector]:
+    components: List[Vector] = []
+    for _ in range(num_components):
+        component = first_principal_component(data)
+        components.append(component)
+        data = remove_projection(data, component)
+
+    return components
+
+def transform_vector(v: Vector, components: List[Vector]) -> Vector:
+    return [dot(v, w) for w in components]
+
+def transform(data: List[Vector], components: List[Vector]) -> List[Vector]:
+    return [transform_vector(v, components) for v in data]
+
+def main():
+
+    # I don't know why this is necessary
+    plt.gca().clear()
+    plt.close()
+
+    import random
+    from cap06 import inverse_normal_cdf
+
+    random.seed(0)
+
+    # uniform between -100 and 100
+    uniform = [200 * random.random() - 100 for _ in range(10000)]
+
+    # normal distribution with mean 0, standard deviation 57
+    normal = [57 * inverse_normal_cdf(random.random())
+              for _ in range(10000)]
+
+    plot_histogram(uniform, 10, "Uniform Histogram")
+
+
+
+    plt.savefig('im/working_histogram_uniform.png')
+    plt.gca().clear()
+    plt.close()
+
+    plot_histogram(normal, 10, "Normal Histogram")
+
+
+    plt.savefig('im/working_histogram_normal.png')
+    plt.gca().clear()
+
+    from cap05 import correlation
+
+    print(correlation(xs, ys1))      # about 0.9
+    print(correlation(xs, ys2))      # about -0.9
+
+
+
+    from typing import List
+
+    # Just some random data to show off correlation scatterplots
+    num_points = 100
+
+    def random_row() -> List[float]:
+       row = [0.0, 0, 0, 0]
+       row[0] = random_normal()
+       row[1] = -5 * row[0] + random_normal()
+       row[2] = row[0] + row[1] + 5 * random_normal()
+       row[3] = 6 if row[2] > -2 else 0
+       return row
+
+    random.seed(0)
+    # each row has 4 points, but really we want the columns
+    corr_rows = [random_row() for _ in range(num_points)]
+
+    corr_data = [list(col) for col in zip(*corr_rows)]
+
+    # corr_data is a list of four 100-d vectors
+    num_vectors = len(corr_data)
+    fig, ax = plt.subplots(num_vectors, num_vectors)
+
+    for i in range(num_vectors):
+        for j in range(num_vectors):
+
+            # Scatter column_j on the x-axis vs column_i on the y-axis,
+            if i != j: ax[i][j].scatter(corr_data[j], corr_data[i])
+
+            # unless i == j, in which case show the series name.
+            else: ax[i][j].annotate("series " + str(i), (0.5, 0.5),
+                                    xycoords='axes fraction',
+                                    ha="center", va="center")
+
+            # Then hide axis labels except left and bottom charts
+            if i < num_vectors - 1: ax[i][j].xaxis.set_visible(False)
+            if j > 0: ax[i][j].yaxis.set_visible(False)
+
+    # Fix the bottom right and top left axis labels, which are wrong because
+    # their charts only have text in them
+    ax[-1][-1].set_xlim(ax[0][-1].get_xlim())
+    ax[0][0].set_ylim(ax[0][1].get_ylim())
+
+    # plt.show()
+
+
+
+    plt.savefig('im/working_scatterplot_matrix.png')
+    plt.gca().clear()
+    plt.close()
+    plt.clf()
+
+    import csv
+
+    data: List[StockPrice] = []
+
+    with open("comma_delimited_stock_prices.csv") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            maybe_stock = try_parse_row(row)
+            if maybe_stock is None:
+                print(f"skipping invalid row: {row}")
+            else:
+                data.append(maybe_stock)
+
+    from typing import List
+
+    def primes_up_to(n: int) -> List[int]:
+        primes = [2]
+
+        with tqdm.trange(3, n) as t:
+            for i in t:
+                # i is prime if no smaller prime divides it.
+                i_is_prime = not any(i % p == 0 for p in primes)
+                if i_is_prime:
+                    primes.append(i)
+
+                t.set_description(f"{len(primes)} primes")
+
+        return primes
+
+    my_primes = primes_up_to(100_000)
+
+
+
+    de_meaned = de_mean(pca_data)
+    fpc = first_principal_component(de_meaned)
+    assert 0.923 < fpc[0] < 0.925
+    assert 0.382 < fpc[1] < 0.384
+
+if __name__ == "__main__": main()
