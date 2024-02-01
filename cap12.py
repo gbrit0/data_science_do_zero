@@ -36,7 +36,7 @@ from cap04 import Vector, distance
 #    label: str
 
 class LabeledPoint(NamedTuple):
-    measurements: List[float]
+    point: List[float]
     label: str
 
 
@@ -115,3 +115,114 @@ for iris in iris_data:
    points_by_species[iris.label].append(iris.point)
 
 from matplotlib import pyplot as plt
+metrics = ['sepal length', 'sepal width', 'petal length', 'petal width']
+pairs = [(i, j) for i in range(4) for j in range(4) if i < j]
+marks = ['+', '.', 'x']
+
+fig, ax = plt.subplots(2,3)
+
+for row in range(2):
+   for col in range(3):
+      i, j = pairs[3 * row + col]
+      ax[row][col].set_title(f"{metrics[i]} vs {metrics[j]}", fontsize=8)
+      ax[row][col].set_xticks([])
+      ax[row][col].set_yticks([])
+
+      for mark, (species, points) in zip(marks, points_by_species.items()):
+         xs = [point[i] for point in points]
+         ys = [point[j] for point in points]
+         ax[row][col].scatter(xs, ys, marker=mark, label=species)
+
+ax[-1][-1].legend(loc='lower right', prop={'size': 6})
+plt.show()
+
+import random
+from cap11 import split_data
+
+random.seed(12)
+
+iris_train, iris_test = split_data(iris_data, 0.7)
+assert len(iris_train) == 0.7 * 150
+assert len(iris_test) == 0.3 * 150
+
+# conte quantas vezes identificamos (previsto, real)
+confusion_matrix: Dict[Tuple[str, str], int] = defaultdict(int)
+num_correct = 0
+
+for iris in iris_test:
+   predicted = knn_classify(5, iris_train, iris.point)
+   actual = iris.label
+
+   if predicted == actual:
+      num_correct += 1
+
+   confusion_matrix[(predicted, actual)] += 1
+
+pct_corret = num_correct / len(iris_test)
+print(pct_corret, confusion_matrix)
+
+
+# A maldição da dimensionalidade
+
+def random_point(dim: int) -> Vector:
+   return [random.random() for _ in range(dim)]
+
+def random_distances(dim: int, num_pairs: int) -> List[float]:
+   return [distance(random_point(dim), random_point(dim))
+           for _ in range(num_pairs)]
+
+# Para cada dimensão de 1 a 100 vamos computar 10 mil distâncias
+# e usá-las para computar a distância média entre os pontos e a distância mínima
+# entre os pontos em cada dimensão
+
+import tqdm
+dimensions = range(1,101)
+
+avg_distances = []
+min_distances = []
+
+random.seed(0)
+for dim in tqdm.tqdm(dimensions, desc="Maldição da Dimensionalidade"):
+   distances = random_distances(dim, 10_000)          # 10 mil pares aleatórios
+   avg_distances.append(sum(distances) / 10_000)      # obtenha a média
+   min_distances.append(min(distances))               # obtenha a mínima
+
+xs = [dimension for dimension in dimensions]
+plt.plot(xs,avg_distances,label='distância média')
+plt.plot(xs,min_distances,label='distância mínima')
+plt.legend(loc=0)
+plt.xlabel("nº de dimensões")
+# plt.xticks([])
+plt.title("10000 Distâncias Aleatórias")
+
+plt.show()
+
+# o fator mais problemático é a relação entre a distância mais próxima e a distância média
+
+min_avg_ratio = [min_dist / avg_dist
+                 for min_dist, avg_dist in zip(min_distances, avg_distances)]
+
+plt.plot(xs, min_avg_ratio)
+plt.xlabel("nº de dimensões")
+plt.title("Distância Mínima/Distância Média")
+
+plt.show()
+
+# 50 números aleatórios entre 0 e 1
+
+numbers = [random.random() for _ in range(50)]
+numbers.sort()
+
+# Criar um gráfico de dispersão
+plt.scatter(range(len(numbers)), numbers, marker='o', color='blue', label='Pontos Aleatórios')
+
+# Adicionar rótulos e título
+plt.xticks([])
+plt.ylabel('Valores')
+plt.title('Gráfico de Pontos Aleatórios em Uma Dimensão')
+
+# Adicionar legenda
+plt.legend()
+
+# Exibir o gráfico
+plt.show()
