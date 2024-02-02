@@ -148,3 +148,56 @@ for filename in FILES:
    # Extraia todos os arquivos para o diretório de saída especificado
    with tarfile.open(fileobj=fin, mode='r:bz2') as tf:
       tf.extractall(OUTPUT_DIR)
+
+
+import glob, re
+import tqdm
+# Modifique o caminho para indicar o local dos arquivos
+path = 'spam_data/*/*'
+
+data: List[Message] = []
+
+# glob.glob retorna todos os nomes que arquivos que correspondem ao path curinga definido anteriormente
+for filename in tqdm.tqdm(glob.glob(path), desc="Extrair os assuntos dos e-mails:"):
+   is_spam = "ham" not in filename
+
+   # Existem alguns caracteres de lixo nos e-mails; o errors='ignore' os ignora em vez de gerar uma exceção
+   with open(filename, errors='ignore') as email_file:
+      for line in email_file:
+         if line.startswith("Subject: "):
+            subject = line.lstrip("Subject: ")
+            data.append(Message(subject, is_spam))
+            break # o arquivo foi finalizado
+
+
+import random
+from cap11 import split_data
+
+random.seed(0)
+train_messages, test_messages = split_data(data, 0.75)
+
+model = NaiveBayesClassifier()
+model.train(train_messages)
+
+from collections import Counter
+
+predictions = [(message, model.predict(message.text))
+               for message in test_messages]
+
+# Presuma que spam_probability > 0.5 corresponde à previsão de spam
+# e conte as combinações de (real is_spam, previsto is_spam)
+confusion_matrix =  Counter((message.is_spam, spam_probability > 0.5)
+                            for message, spam_probability in predictions)
+
+print(confusion_matrix)
+
+def p_spam_given_token(token: str, model: NaiveBayesClassifier) -> float:
+   # Não se recomenda chamr métodos privados, mas é por uma boa causa
+   probs_if_spam, probs_if_ham = model._probabilities(token)
+
+   return probs_if_spam / (probs_if_spam + probs_if_ham)
+
+words =  sorted(model.tokens, key=lambda t: p_spam_given_token(t, model))
+
+print("spammiest_words", words[-10:])
+print("hammiest_words", words[:10])
