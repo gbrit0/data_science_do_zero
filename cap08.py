@@ -31,7 +31,7 @@ plt.title("Derivadas reais X Estimaivas")
 plt.plot(xs, actuals, 'rx', label='Real')                # vermelho x
 plt.plot(xs, estimates, 'b+', label='Estimativa')        # azul +
 plt.legend(loc=9)
-plt.show()
+# plt.show()
 
 def partial_difference_quotient(f: Callable[[Vector], float],
                                 v: Vector,
@@ -67,7 +67,7 @@ v = [random.uniform(-10, 10) for i in range(3)]
 for epoch in range(1000):
    grad = sum_of_squares_gradient(v)                        # Compute o gradiente em v
    v = gradient_step(v, grad, -0.01)                        # dê um passo negativo para o gradiente
-   print(epoch, v)
+   # print(epoch, v)
 
 assert distance(v, [0, 0, 0]) < 0.001                       # v deve ser próximo de 0
 
@@ -96,7 +96,7 @@ for epoch in range(5000):
    grad = vector_mean([linear_gradient(x, y, theta) for x, y in inputs])
    # Dê um passo nessa direção
    theta = gradient_step(theta, grad, -learning_rate)
-   print(epoch, theta)
+   # print(epoch, theta)
 
 slope, intercept = theta
 assert 19.9 < slope < 20.1, "slope should be about 20"
@@ -126,7 +126,7 @@ for epoch in range(1000):
    for batch in minibatches(inputs, batch_size=20):
       grad = vector_mean([linear_gradient(x, y, theta) for x, y in batch])
       theta = gradient_step(theta, grad, -learning_rate)
-   print(epoch, theta)
+   # print(epoch, theta)
 
 slope, intercept = theta
 assert 19.9 < slope < 20.1, "slope should be about 20"
@@ -139,7 +139,7 @@ for epoch in range(100):
    for x, y in inputs:
       grad = linear_gradient(x, y, theta)
       theta = gradient_step(theta, grad, -learning_rate)
-   print(epoch, theta)
+   # print(epoch, theta)
 
 slope, intercept = theta
 assert 19.9 < slope < 20.1, "slope should be about 20"
