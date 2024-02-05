@@ -34,12 +34,12 @@ def least_squares_fit(x: Vector, y: Vector) -> Tuple[float, float]:
    return alpha, beta
 
 # teste rápido
-x = [i for i in range(-100, 100, 20)]
+x = [i for i in range(-100, 110, 10)]
 y = [ 3 * i - 5 for i in x]
 
 # Deve encontrar y = 3x - 5
 alpha, beta = least_squares_fit(x, y)
-assert alpha, beta == (-5, 0)
+assert alpha, beta == (-5, 3)
 
 # Agora é fácil aplicar isso aos dados sem outliers do capítulo 5
 from cap05 import num_friends_good, daily_minutes_good
@@ -80,7 +80,7 @@ def r_squared(alpha: float, beta: float, x: Vector, y: Vector) -> float:
    return 1.0 - (sum_of_sqerrors(alpha, beta, x, y) / total_sum_of_squares(y))
 
 rsq = r_squared(alpha, beta, num_friends_good, daily_minutes_good)
-print(rsq) # 0.30010966199698186 indica um ajuste razoável do modelo aos dados, mas também que, claramente, há outros fatores em jogo
+assert 0.328 < rsq < 0.330
 
 
 # USANDO O GRADIENTE DESCENDENTE
@@ -122,5 +122,5 @@ alpha, beta = guess
 print(alpha) # algo deu errado
 print(beta)  # algo deu muito errado
 
-assert 22.9 < alpha < 23.0, f"{alpha}"   # 22.7515894851926       # algo deu errado
-assert 0.9 < beta < 0.905, f"{beta}"     # -0.9415332000143635    # algo deu muito errado
+assert 22.9 < alpha < 23.0, f"{alpha}"   # 22.947552155340915
+assert 0.9 < beta < 0.905, f"{beta}"     # 0.9038659662765034    

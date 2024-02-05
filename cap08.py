@@ -26,11 +26,11 @@ actuals = [derivative(x) for x in xs]
 estimates = [difference_quotient(square, x, h=0.001) for x in xs]
 
 # plote para indicar que eles são essencialmente os mesmos
-import matplotlib.pyplot as plt
-plt.title("Derivadas reais X Estimaivas")
-plt.plot(xs, actuals, 'rx', label='Real')                # vermelho x
-plt.plot(xs, estimates, 'b+', label='Estimativa')        # azul +
-plt.legend(loc=9)
+# import matplotlib.pyplot as plt
+# plt.title("Derivadas reais X Estimaivas")
+# plt.plot(xs, actuals, 'rx', label='Real')                # vermelho x
+# plt.plot(xs, estimates, 'b+', label='Estimativa')        # azul +
+# plt.legend(loc=9)
 # plt.show()
 
 def partial_difference_quotient(f: Callable[[Vector], float],
