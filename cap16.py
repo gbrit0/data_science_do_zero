@@ -133,24 +133,24 @@ recall = true_positives / (true_positives + false_negatives)            # 0.8 qu
 # PRECISO ARRUMAR UM JEITO DE PLOTAR O GRÁFICO 16-5
 # data = [list(row) for row in tuples]
 
-xs_paid = []
-ys_paid = []
-xs_unpaid = []
-ys_unpaid = []
-for i in range(len(data)):
-   if data[i][2] == 0:
-      xs_paid.append(data[i][0])
-      ys_paid.append(data[i][1])
-   else:
-      xs_unpaid.append(data[i][0])
-      ys_unpaid.append(data[i][1])
+# xs_paid = []
+# ys_paid = []
+# xs_unpaid = []
+# ys_unpaid = []
+# for i in range(len(data)):
+#    if data[i][2] == 0:
+#       xs_paid.append(data[i][0])
+#       ys_paid.append(data[i][1])
+#    else:
+#       xs_unpaid.append(data[i][0])
+#       ys_unpaid.append(data[i][1])
 
 
-plt.scatter(xs_paid, ys_paid, marker='+', label='não pagante')
-plt.scatter(xs_unpaid, ys_unpaid, marker='.', label='pagante')
-plt.title('Fronteire de Decisão por Regressão Logística')
-plt.legend(loc=8)
-plt.xlabel('anos de experiencia')
-plt.ylabel('salário anual')
-plt.axis([0,11,0,120000])
-plt.show()
+# plt.scatter(xs_paid, ys_paid, marker='+', label='não pagante')
+# plt.scatter(xs_unpaid, ys_unpaid, marker='.', label='pagante')
+# plt.title('Fronteire de Decisão por Regressão Logística')
+# plt.legend(loc=8)
+# plt.xlabel('anos de experiencia')
+# plt.ylabel('salário anual')
+# plt.axis([0,11,0,120000])
+# plt.show()
