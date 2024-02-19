@@ -30,8 +30,8 @@ for _ in range(10000):
    if older == Kid.GIRL or younger == Kid.GIRL:
       either_girl += 1
 
-print("P(both | older):", both_girls / older_girl)             #0.5007 ~ 1/2
-print("P(both | either):", both_girls / either_girl)           #0.3311 ~ 1/3
+# print("P(both | older):", both_girls / older_girl)             #0.5007 ~ 1/2
+# print("P(both | either):", both_girls / either_girl)           #0.3311 ~ 1/3
 
 # O TEOREMA DE BAYES
 
@@ -142,6 +142,6 @@ def binomial_histogram(p: float, n: int, num_points: int) -> None:
          for i in xs]
    plt.plot(xs,ys)
    plt.title("Binomial Distribution vs. Normal Approximation")
-   plt.show()
+   # plt.show()
 
 binomial_histogram(0.75, 100, 10000)
