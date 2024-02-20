@@ -73,6 +73,8 @@ assert 0.999 < feed_forward(xor_network, [1, 0])[-1][0] < 1.000
 assert 0.999 < feed_forward(xor_network, [0, 1])[-1][0] < 1.000
 assert 0.000 < feed_forward(xor_network, [1, 1])[-1][0] < 0.001
 
+
+
 def sqerror_gradients(network: List[List[Vector]],
                       input_vector: Vector,
                       target_vector: Vector) -> List[List[Vector]]:
