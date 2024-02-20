@@ -482,7 +482,24 @@ def loop(model: Layer,
             acc = correct / (i + 1)
             t.set_description(f"mnist loss: {avg_loss:.3f} acc: {acc:.3f}")
 
+import json
 
+def save_weights(model: Layer, filename: str) -> None:
+   weights = list(model.params())
+   with open(filename, 'w') as f:
+      json.dump(weights,f)
+
+def load_weights(model: Layer, filename: str) -> None:
+   with open(filename) as f:
+      weights = json.load(f)
+
+   # Verifique a consistência
+   assert all(shape(param) == shape(weight)
+               for param, weight in zip(model.params(), weights))
+
+   # Em seguida, carregue usando a atribuição de fatia
+   for param, weight in zip(model.params(), weights):
+      param[:] = weight   
 
 def main():
 
@@ -633,5 +650,48 @@ def main():
 
    assert shape(train_labels) == [60000, 10]
    assert shape(test_labels) == [10000, 10]
+
+   # A regressão logística é apenas uma camada linear seguida pelo softmax
+   model = Linear(784, 10)
+   loss = SoftmaxCrossEntropy()
+
+   # Este otimizador parece funcionar
+   optimizer = Momentum(learning_rate=0.01, momentum=0.99)
+
+   # Treine com os dados de treinamento
+   loop(model, train_images, train_labels, loss, optimizer)
+
+   # Teste com os dados de teste (se não houver nenhum otimizador, só avalie)
+   loop(model, test_images, test_labels, loss)
+
+   # Vendo se melhora com uma rede neural profunda - duas camadas ocultas, 30 e 10 neurônios, respectivamente
+
+   # Atribuindo nomes para ativar e desativar o treinamento
+   dropout1 = Dropout(0.1)
+   dropout2 = Dropout(0.1)
+
+   model = Sequential([
+      Linear(784, 30),              # Camada oculta 1: tamanho 30
+      dropout1,
+      Tanh(),
+      Linear(30,10),                # Camada oculta 2: tamanho 10
+      dropout2,
+      Tanh(),
+      Linear(10, 10)                # Camada de saída: tamanho 10   
+   ])
+
+   optimizer = Momentum(learning_rate=0.01, momentum=0.99)
+   loss = SoftmaxCrossEntropy()
+
+   # Ative o dropout e o treinamento (demora)
+   dropout1.train = dropout2.train = True
+   loop(model, train_images, train_labels, loss, optimizer)
+
+   dropout1.train = dropout2.train = False
+   loop(model, test_images, test_labels, loss)
+   
+   save_weights(model, 'weights.json')
+   
+
 
 if __name__ == "__main__": main()
