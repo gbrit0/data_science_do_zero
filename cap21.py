@@ -440,4 +440,197 @@ class TextEmbedding(Embedding):
       else:
          return None
       
+   def closest(self, word: str, n: int = 5) -> List[Tuple[float, str]]:
+      """Retorna as n palavras mais próximas com base na semelhança dos cossenos"""
+      vector = self[word]
+
+      # Compute os pares (semelhança, other_word) e indique o mais semelhante
+      scores = [(cosine_similarity(vector, self.embeddings[i]), other_word)
+                for other_word, i in self.vocab.w2i.items()]
+      scores.sort(reverse=True)
+      return scores[:n]
    
+import re
+
+# Este não é um ótimo regex, mas funciona com esses dados.
+tokenized_sentences = [re.findall("[a-z]+|[.]", sentence.lower())
+                       for sentence in sentences]
+
+vocab = Vocabulary(word
+                   for sentence_words in tokenized_sentences
+                   for word in sentence_words)
+
+from cap19 import Tensor, one_hot_encode
+
+inputs: List[int] = []
+targets: List[Tensor] = []
+
+for sentence in tokenized_sentences:
+   for i, word in enumerate(sentence):             # Para cada palavra
+      for j in [i - 2, i - 1, i + 1, i + 2]:       # analise os locais próximos
+         if 0 <= j < len(sentence):                # que não estejam fora dos limites
+            nearby_word = sentence[j]              # e obtenhas essas palavras
+
+            # Adicione uma entrada com o word_id original
+            inputs.append(vocab.get_id(word))
+
+            # Adicione um destino que seja os destinos das palavras próximas codificadas em "one hot"
+            targets.append(vocab.one_hot_encode(nearby_word))
+
+from cap19 import Sequential, Linear
+
+random.seed(0)
+EMBEDDING_DIM = 5 # parece um bom tamanho
+
+# Defina a camada de incorporação separadamente para que ela seja referenciada depois
+embedding = TextEmbedding(vocab=vocab, embedding_dim=EMBEDDING_DIM)
+
+model = Sequential([
+   # Para uma determinada palavra (como um vetor de words_ids), procure sua incorporação
+   embedding,
+   # E use uma camada linear para calcular as pontuações das "palavras próxiams"
+   Linear(input_dim=EMBEDDING_DIM, output_dim=vocab.size)
+])
+
+from cap19 import SoftmaxCrossEntropy, Momentum, GradientDescendent
+
+loss = SoftmaxCrossEntropy()
+optimizer = GradientDescendent(learning_rate=0.01)
+
+for epoch in range(100):
+   epoch_loss = 0.0
+   for input, target in zip(inputs, targets):
+      predicted = model.forward(input)
+      epoch_loss += loss.loss(predicted, target)
+      gradient = loss.gradient(predicted, target)
+      model.backward(gradient)
+      optimizer.step(model)
+   print(epoch, epoch_loss)            # Print the loss
+   print(embedding.closest("black"))   # and also a few nearest words
+   print(embedding.closest("slow"))    # so we can see what's being
+   print(embedding.closest("car"))     # learned.
+  
+pairs = [(cosine_similarity(embedding[w1], embedding[w2]), w1, w2)
+         for w1 in vocab.w2i
+         for w2 in vocab.w2i
+         if w1 < w2]
+
+pairs.sort(reverse=True)
+print(pairs[:5])
+
+from cap19 import tensor_apply, tanh
+
+class SimpleRnn(Layer):
+   """Essa é a camada recorrente mais simples possível."""
+   def __init__(self, input_dim: int, hidden_dim: int) -> None:
+      self.input_dim = input_dim
+      self.hidden_dim = hidden_dim
+
+      self.w = random_tensor(hidden_dim, input_dim, init='xavier')
+      self.wu = random_tensor(hidden_dim, input_dim, init='xavier')
+      self.b = random_tensor(hidden_dim)
+
+      self.reset_hidden_state()
+
+   def reset_hidden_state(self) -> None:
+      self.hidden = [0 for _ in range(self.hidden_dim)]
+
+   def forward(self, input:Tensor) -> Tensor:
+      self.input = input                     # Salve a entrada e o estado
+      self.prev_hidden = self.hidden         # Oculto anteriro para usar na retropropagação
+
+      a = [(dot(self.w[h],input) +        # pesos @ entrada
+            dot(self.u[h], self.hidden) + # pesos @ oculto
+            self.b[h])                    # viés
+            for h in range(self.hidden_dim)]
+
+      self.hidden = tensor_apply(tanh, a)       # Aplique a ativação tanh
+      return self.hidden                        # e retorne o resultado
+
+   def backward(self, gradient: Tensor):
+      # Retropropague com a tanh
+      a_grad = [gradient[h] * (1 - self.hidden[h] ** 2)
+                for h in range(self.hidden_dim)]                   
+      
+      # b tem o mesmo gradiente que a
+      self.b_grad = a_grad
+
+      # Cada w[h][i] é multiplicado por input[i] e adicionado a a[h], então cada w_grad[h][i] = a_grad[h] * input[i]
+      self.w_grad = [[a_grad[h] * self.input[i]
+                      for i in range(self.input_dim)]
+                      for h in range(self.hidden_dim)]      
+      
+      # Cada u[h][h2] é multiplicada por hidden[h2] e adicionado a a[h], então cada u_grad[h][h2] = a_grad[h] * prev_hidden[h2]
+      self.u_grad = [[a_grad[h] * self.prev_hidden[h2]
+                      for h2 in range(self.hidden_dim)]
+                      for h in range(self.hidden_dim)]
+      
+      # cada input[i] é multiplicado por cada w[h][i] e adicionado a a[h], então cada input_grad[i] = sum(a_grad[h] * w[h][i] for h in ...)
+      return [sum(a_grad[h] * self.w[h][i] for h in range(self.hidden_dim))
+              for i in range(self.input_dim)]
+   
+   def params(self) -> Iterable[Tensor]:
+      return [self.w, self.u, self.b]
+
+   def grads(self) -> Iterable[Tensor]:
+      return [self.w_grad, self.u_grad, self.b_grad]
+
+def main():
+   from cap10 import pca, transform
+   import matplotlib.pyplot as plt
+
+   # Faça a extração dos dois primeiros componentes principais e os transforme em vetores de palavras
+   components = pca(embedding.embeddings, 2)
+   transformed = transform(embedding.embeddings, components)
+
+   # Disperse os pontos e defina sua cor como branca para que não fiquem invisíveis
+   fig, ax = plt.subplots()
+   ax.scatter(*zip(*transformed), marker='.', color='w')
+
+   # Adicione anotações para cada palavra em seu local transformado
+   for word, idx in vocab.w2i.items():
+      ax.annotate(word, transformed[idx])
+
+   # E oculte os eixos
+   ax.get_xaxis().set_visible(False)
+   ax.get_yaxis().set_visible(False)
+
+   plt.show()
+
+    
+   from bs4 import BeautifulSoup
+   import requests
+   
+   url = "https://www.ycombinator.com/topcompanies/"
+   soup = BeautifulSoup(requests.get(url).text, 'html5lib')
+   
+   # We get the companies twice, so use a set comprehension to deduplicate.
+   companies = list({b.text
+                     for b in soup("b")
+                     if "h4" in b.get("class", ())})
+   assert len(companies) == 101, len(companies)
+   
+   vocab = Vocabulary([c for company in companies for c in company])
+   
+   START = "^"
+   STOP = "$"
+   
+   # We need to add them to the vocabulary too.
+   vocab.add(START)
+   vocab.add(STOP)
+   
+   HIDDEN_DIM = 32  # You should experiment with different sizes!
+   
+   rnn1 =  SimpleRnn(input_dim=vocab.size, hidden_dim=HIDDEN_DIM)
+   rnn2 =  SimpleRnn(input_dim=HIDDEN_DIM, hidden_dim=HIDDEN_DIM)
+   linear = Linear(input_dim=HIDDEN_DIM, output_dim=vocab.size)
+   
+   model = Sequential([
+      rnn1,
+      rnn2,
+      linear
+   ])
+
+
+
+if __name__ == "__main__" : main()
