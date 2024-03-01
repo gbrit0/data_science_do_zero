@@ -4,3 +4,5 @@ venv/
 spam_data/
 tmp/
 *.jpg
+*.data
+*.item
