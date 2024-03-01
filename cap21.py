@@ -266,33 +266,33 @@ for d in range(D):
       topic_word_counts[topic][word] += 1
       topic_counts[topic] += 1
 
-import tqdm
+# import tqdm
 
-for iter in tqdm.trange(1000):
-   for d in range(D):
-      for i, (word, topic) in enumerate(zip(documents[d], document_topics[d])):
+# for iter in tqdm.trange(1000):
+#    for d in range(D):
+#       for i, (word, topic) in enumerate(zip(documents[d], document_topics[d])):
 
-         # remova esta palavra/tópico das contagens para que naõ influencie os pesos
-         document_topic_counts[d][topic] -= 1
-         topic_word_counts[topic][word] -= 1
-         topic_counts[topic] -= 1
-         document_lenghts[d] -= 1
+#          # remova esta palavra/tópico das contagens para que naõ influencie os pesos
+#          document_topic_counts[d][topic] -= 1
+#          topic_word_counts[topic][word] -= 1
+#          topic_counts[topic] -= 1
+#          document_lenghts[d] -= 1
 
-         # escolha um novo tópico com base nos pesos
-         new_topic = choose_new_topic(d, word)
-         document_topics[d][i] = new_topic
+#          # escolha um novo tópico com base nos pesos
+#          new_topic = choose_new_topic(d, word)
+#          document_topics[d][i] = new_topic
 
-         # e agora o adicione novamente às contagens
-         document_topic_counts[d][new_topic] += 1
-         topic_word_counts[new_topic][word] += 1
-         topic_counts[new_topic] += 1
-         document_lenghts[d] += 1
+#          # e agora o adicione novamente às contagens
+#          document_topic_counts[d][new_topic] += 1
+#          topic_word_counts[new_topic][word] += 1
+#          topic_counts[new_topic] += 1
+#          document_lenghts[d] += 1
 
 
-for k, word_counts in enumerate(topic_word_counts):
-   for word, count in word_counts.most_common():
-      if count > 0:
-         print(k, word, count)
+# for k, word_counts in enumerate(topic_word_counts):
+#    for word, count in word_counts.most_common():
+#       if count > 0:
+#          print(k, word, count)
 
 
 from cap04 import dot, Vector
@@ -497,18 +497,18 @@ from cap19 import SoftmaxCrossEntropy, Momentum, GradientDescendent
 loss = SoftmaxCrossEntropy()
 optimizer = GradientDescendent(learning_rate=0.01)
 
-for epoch in range(100):
-   epoch_loss = 0.0
-   for input, target in zip(inputs, targets):
-      predicted = model.forward(input)
-      epoch_loss += loss.loss(predicted, target)
-      gradient = loss.gradient(predicted, target)
-      model.backward(gradient)
-      optimizer.step(model)
-   print(epoch, epoch_loss)            # Print the loss
-   print(embedding.closest("black"))   # and also a few nearest words
-   print(embedding.closest("slow"))    # so we can see what's being
-   print(embedding.closest("car"))     # learned.
+# for epoch in range(100):
+#    epoch_loss = 0.0
+#    for input, target in zip(inputs, targets):
+#       predicted = model.forward(input)
+#       epoch_loss += loss.loss(predicted, target)
+#       gradient = loss.gradient(predicted, target)
+#       model.backward(gradient)
+#       optimizer.step(model)
+#    print(epoch, epoch_loss)            # Print the loss
+#    print(embedding.closest("black"))   # and also a few nearest words
+#    print(embedding.closest("slow"))    # so we can see what's being
+#    print(embedding.closest("car"))     # learned.
   
 pairs = [(cosine_similarity(embedding[w1], embedding[w2]), w1, w2)
          for w1 in vocab.w2i
@@ -516,7 +516,7 @@ pairs = [(cosine_similarity(embedding[w1], embedding[w2]), w1, w2)
          if w1 < w2]
 
 pairs.sort(reverse=True)
-print(pairs[:5])
+# print(pairs[:5])
 
 from cap19 import tensor_apply, tanh
 
@@ -595,7 +595,7 @@ def main():
    ax.get_xaxis().set_visible(False)
    ax.get_yaxis().set_visible(False)
 
-   plt.show()
+   # plt.show()
 
     
    from bs4 import BeautifulSoup
